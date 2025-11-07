@@ -35,6 +35,8 @@ class QuestionDialog extends StatelessWidget {
       } catch (_) {
         controller.orderController.text = '1';
       }
+      // ✅ T2: تأكد من إضافة الحقل الأول للنوع الافتراضي (MCQ)
+      controller.addFirstFieldIfNeeded(controller.selectedType.value);
     }
 
     return CustomDialog(
@@ -99,24 +101,70 @@ class QuestionDialog extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // نص السؤال
+
+                    // ✅ T1: نص السؤال مع زر الميديا
                     TextFormField(
                       controller: controller.questionTextController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: "نص السؤال",
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         alignLabelWithHint: true,
+                        // ✅ T2: تغيير الأيقونة إلى لاحقة
+                        suffixIcon: PopupMenuButton<String>(
+                          icon: const Icon(Icons.attach_file),
+                          onSelected: (value) {
+                            if (value == 'camera') {
+                              controller.pickImageFromCamera();
+                            } else if (value == 'gallery') {
+                              controller.pickImageFromGallery();
+                            } else if (value == 'audio') {
+                              controller.pickAudio();
+                            }
+                          },
+                          itemBuilder: (BuildContext context) =>
+                              <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'camera',
+                              child: ListTile(
+                                leading: Icon(Icons.camera_alt),
+                                title: Text('الكاميرا'),
+                              ),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'gallery',
+                              child: ListTile(
+                                leading: Icon(Icons.image),
+                                title: Text('المعرض'),
+                              ),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'audio',
+                              child: ListTile(
+                                leading: Icon(Icons.audiotrack),
+                                title: Text('مقطع صوتي'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       maxLines: 3,
                       minLines: 1,
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "نص السؤال لا يمكن أن يكون فارغًا.";
+                        // التحقق من الصحة يجب أن يأخذ في الاعتبار المرفقات
+                        if ((value == null || value.isEmpty) &&
+                            controller.questionImageUrl.value == null &&
+                            controller.questionAudioUrl.value == null) {
+                          return "نص السؤال (أو مرفقاته) لا يمكن أن يكون فارغًا.";
                         }
                         return null;
                       },
                     ),
+
+                    // ✅ T1: عرض المرفقات المختارة للسؤال
+                    Obx(() => _buildQuestionMediaAttachments(controller)),
+
                     const SizedBox(height: 16),
+
                     // حقل شرح الإجابة (Explanation)
                     TextFormField(
                       controller: controller.explanationController,
@@ -137,8 +185,8 @@ class QuestionDialog extends StatelessWidget {
                 ),
               ),
             ),
-            // أزرار الإضافة والحفظ
-            Obx(() => _buildAddButton(controller)),
+            // ✅ T1: إزالة زر الإضافة اليدوي
+            // Obx(() => _buildAddButton(controller)), // ⛔️ تم الحذف
             const SizedBox(height: KSizes.spaceBewItems),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -168,6 +216,44 @@ class QuestionDialog extends StatelessWidget {
     );
   }
 
+  // ✅ T1: ويدجت لعرض مرفقات نص السؤال
+  Widget _buildQuestionMediaAttachments(QuestionDialogController controller) {
+    if (controller.questionImageUrl.value == null &&
+        controller.questionAudioUrl.value == null) {
+      return const SizedBox.shrink();
+    }
+
+    String title = '';
+    IconData icon = Icons.error;
+
+    if (controller.questionImageUrl.value != null) {
+      title =
+          'صورة مرفقة: ${controller.questionImageUrl.value!.split('/').last}';
+      icon = Icons.image;
+    } else if (controller.questionAudioUrl.value != null) {
+      title =
+          'صوت مرفق: ${controller.questionAudioUrl.value!.split('/').last}';
+      icon = Icons.audiotrack;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(
+          top: 8, left: 40, right: 40), // تمت إضافة هامش لتمييزه
+      child: ListTile(
+        leading: Icon(icon, color: Colors.blue),
+        title: Text(title,
+            style: const TextStyle(fontSize: 12),
+            overflow: TextOverflow.ellipsis),
+        trailing: IconButton(
+          icon: const Icon(Icons.clear, size: 18, color: Colors.red),
+          onPressed: () {
+            controller.clearQuestionMedia();
+          },
+        ),
+      ),
+    );
+  }
+
   // دالة تحدد نوع الحقول التي سيتم عرضها
   Widget _buildDynamicFields(QuestionDialogController controller) {
     switch (controller.selectedType.value) {
@@ -186,90 +272,55 @@ class QuestionDialog extends StatelessWidget {
     }
   }
 
-  // دالة مساعدة معمة لبناء أزرار الرفع وعرض الروابط الحالية لأي قائمة خيارات
-  Widget _buildMediaButtons(QuestionDialogController controller, Option option,
-      int index, RxList<Option> optionsList) {
-    return Obx(() {
-      final currentOption = optionsList[index];
-      void updateList(Option newOption) {
-        optionsList[index] = newOption;
-      }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-           
-              ElevatedButton.icon(
-                icon: const Icon(Icons.image, size: 16),
-                label: const Text('صورة'),
-                onPressed: () {},
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.audiotrack, size: 16),
-                label: const Text('صوت'),
-                onPressed: () {},
-              ),
-            ],
+  // ✅ T3: ويدجت لعرض مرفقات *الخيار*
+  Widget _buildOptionMediaAttachments(Option option,
+      {required Function onClearImage, required Function onClearAudio}) {
+    return Column(
+      children: [
+        if (option.imageUrl != null && option.imageUrl!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, left: 40.0, right: 8.0),
+            child: Row(
+              children: [
+                const Icon(Icons.image_outlined, size: 16, color: Colors.blue),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'صورة: ${option.imageUrl!.split('/').last}',
+                    style: const TextStyle(fontSize: 11, color: Colors.blue),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 16, color: Colors.red),
+                  onPressed: () => onClearImage(),
+                ),
+              ],
+            ),
           ),
-          // عرض رابط الصورة الحالي
-          if (currentOption.imageUrl != null &&
-              currentOption.imageUrl!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.image_outlined,
-                      size: 16, color: Colors.blue),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'صورة مرفوعة: ${currentOption.imageUrl!.split('/').last}',
-                      style: const TextStyle(fontSize: 12, color: Colors.blue),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        if (option.audioUrl != null && option.audioUrl!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 0.0, left: 40.0, right: 8.0),
+            child: Row(
+              children: [
+                const Icon(Icons.volume_up, size: 16, color: Colors.orange),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'صوت: ${option.audioUrl!.split('/').last}',
+                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 16, color: Colors.red),
-                    onPressed: () {
-                      // إزالة رابط الصورة
-                      updateList(currentOption.copyWith(imageUrl: null));
-                    },
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 16, color: Colors.red),
+                  onPressed: () => onClearAudio(),
+                ),
+              ],
             ),
-          // عرض رابط الصوت الحالي
-          if (currentOption.audioUrl != null &&
-              currentOption.audioUrl!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.volume_up, size: 16, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'صوت مرفوع: ${currentOption.audioUrl!.split('/').last}',
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.orange),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 16, color: Colors.red),
-                    onPressed: () {
-                      // إزالة رابط الصوت
-                      updateList(currentOption.copyWith(audioUrl: null));
-                    },
-                  ),
-                ],
-              ),
-            ),
-        ],
-      );
-    });
+          ),
+      ],
+    );
   }
 
   // 💡 حقول الاختيار من متعدد
@@ -281,11 +332,15 @@ class QuestionDialog extends StatelessWidget {
         Obx(() => Column(
                 children: controller.mcqOptions.asMap().entries.map((entry) {
               final index = entry.key;
+              // التأكد من أن الخيار لا يزال موجوداً (قد يُحذف)
+              if (index >= controller.mcqOptions.length)
+                return const SizedBox.shrink();
               final option = controller.mcqOptions[index];
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,44 +351,115 @@ class QuestionDialog extends StatelessWidget {
                                   .contains(index),
                               onChanged: (bool? isChecked) {
                                 if (isChecked != null) {
-                                  controller.toggleCorrectMCQAnswer(
-                                      index, true);
+                                  controller.toggleCorrectMCQAnswer(index,
+                                      true); // افترض إمكانية تعدد الإجابات
                                 }
                               },
                             )),
                         // حقل النص
                         Expanded(
-                          child: TextFormField(
-                            initialValue: option.text, // استخدام القيمة مباشرة
-                            decoration: InputDecoration(
-                              labelText: "خيار ${index + 1}",
-                              border: const OutlineInputBorder(),
-                            ),
-                            onChanged: (value) {
-                              controller.mcqOptions[index] =
-                                  option.copyWith(text: value);
-                            },
-                            validator: (value) {
-                              if ((value == null || value.isEmpty) &&
-                                  option.imageUrl == null &&
-                                  option.audioUrl == null) {
-                                return "يجب إدخال نص أو صورة أو صوت للخيار.";
+                          // ✅ T2: إضافة Focus
+                          child: Focus(
+                            onFocusChange: (hasFocus) {
+                              // ✅ T1: تعديل شرط الحذف التلقائي
+                              if (!hasFocus &&
+                                  controller.mcqOptions.length >
+                                      2 && // يجب أن يكون هناك أكثر من حقلين
+                                  index < controller.mcqOptions.length) {
+                                final option = controller.mcqOptions[index];
+                                final bool isEmpty =
+                                    (option.text ?? '').isEmpty &&
+                                        (option.imageUrl ?? '').isEmpty &&
+                                        (option.audioUrl ?? '').isEmpty;
+                                if (isEmpty) {
+                                  // جدولة الحذف لتجنب أخطاء البناء
+                                  Future.delayed(Duration.zero, () {
+                                    controller.removeField(
+                                        QuestionType.mcq, index);
+                                  });
+                                }
                               }
-                              return null;
                             },
+                            child: TextFormField(
+                              initialValue: option.text, // استخدام القيمة مباشرة
+                              decoration: InputDecoration(
+                                labelText: "خيار ${index + 1}",
+                                border: const OutlineInputBorder(),
+                                // ✅ T2: تغيير الأيقونة إلى لاحقة
+                                suffixIcon: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.attach_file,
+                                      size: 20),
+                                  onSelected: (value) {
+                                    if (value == 'camera') {
+                                      controller.pickImageForOption(
+                                          controller.mcqOptions, index,
+                                          fromCamera: true);
+                                    } else if (value == 'gallery') {
+                                      controller.pickImageForOption(
+                                          controller.mcqOptions, index);
+                                    } else if (value == 'audio') {
+                                      controller.pickAudioForOption(
+                                          controller.mcqOptions, index);
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) =>
+                                      <PopupMenuEntry<String>>[
+                                    const PopupMenuItem<String>(
+                                        value: 'camera',
+                                        child: Text('كاميرا')),
+                                    const PopupMenuItem<String>(
+                                        value: 'gallery',
+                                        child: Text('معرض')),
+                                    const PopupMenuItem<String>(
+                                        value: 'audio',
+                                        child: Text('صوت')),
+                                  ],
+                                ),
+                              ),
+                              onChanged: (value) {
+                                // التأكد من أن الخيار لا يزال موجوداً قبل التحديث
+                                if (index < controller.mcqOptions.length) {
+                                  controller.mcqOptions[index] =
+                                      option.copyWith(text: value);
+                                }
+
+                                // ✅ T2: إضافة حقل تالي تلقائيًا
+                                if (index ==
+                                        controller.mcqOptions.length - 1 &&
+                                    value.isNotEmpty) {
+                                  controller.addField(QuestionType.mcq);
+                                }
+                              },
+                              validator: (value) {
+                                // ✅ T3: تعديل التحقق
+                                final bool isEmpty =
+                                    (value == null || value.isEmpty) &&
+                                        (option.imageUrl ?? '').isEmpty &&
+                                        (option.audioUrl ?? '').isEmpty;
+                                
+                                // فقط الحقلين الأولين إجباريين
+                                if (isEmpty && index < 2) {
+                                  return "يجب ملء الخيارين الأولين";
+                                }
+                                return null;
+                              },
+                            ),
                           ),
                         ),
-                        // زر الحذف
-                        IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              controller.removeField(QuestionType.mcq, index);
-                            }),
+                        // ✅ T2: إزالة زر الحذف اليدوي
+                        // if (index > 1) ... else ... // ⛔️ تم الحذف
                       ],
                     ),
-                    // 💡 إضافة أزرار الرفع وعرض الروابط
-                    _buildMediaButtons(
-                        controller, option, index, controller.mcqOptions),
+                    // ✅ T3: عرض المرفقات المختارة *لهذا الخيار*
+                    _buildOptionMediaAttachments(
+                      option,
+                      onClearImage: () => controller.clearMediaForOption(
+                          controller.mcqOptions, index,
+                          clearImage: true),
+                      onClearAudio: () => controller.clearMediaForOption(
+                          controller.mcqOptions, index,
+                          clearAudio: true),
+                    ),
                     const Divider(height: 10, thickness: 1),
                   ],
                 ),
@@ -414,7 +540,7 @@ class QuestionDialog extends StatelessWidget {
     );
   }
 
-  // 💡 حقول المطابقة - تم إضافة دعم الصورة والصوت لكلا العمودين
+  // 💡 حقول المطابقة
   Widget _buildMatchingFields(QuestionDialogController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,8 +551,35 @@ class QuestionDialog extends StatelessWidget {
                 children:
                     controller.matchingLeftItems.asMap().entries.map((entry) {
               final index = entry.key;
+              // التأكد من أن العناصر لا تزال موجودة
+              if (index >= controller.matchingLeftItems.length ||
+                  index >= controller.matchingRightItems.length) {
+                return const SizedBox.shrink();
+              }
               final leftOption = entry.value;
               final rightOption = controller.matchingRightItems[index];
+
+              // دالة التحقق من الحذف التلقائي
+              void checkAutoDelete() {
+                // ✅ T1: تعديل شرط الحذف التلقائي
+                if (controller.matchingLeftItems.length > 2 && // يجب أن يكون هناك أكثر من حقلين
+                    index < controller.matchingLeftItems.length) {
+                  final left = controller.matchingLeftItems[index];
+                  final right = controller.matchingRightItems[index];
+                  final bool leftIsEmpty = (left.text ?? '').isEmpty &&
+                      (left.imageUrl ?? '').isEmpty &&
+                      (left.audioUrl ?? '').isEmpty;
+                  final bool rightIsEmpty = (right.text ?? '').isEmpty &&
+                      (right.imageUrl ?? '').isEmpty &&
+                      (right.audioUrl ?? '').isEmpty;
+
+                  if (leftIsEmpty && rightIsEmpty) {
+                    Future.delayed(Duration.zero, () {
+                      controller.removeField(QuestionType.matching, index);
+                    });
+                  }
+                }
+              }
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -439,29 +592,96 @@ class QuestionDialog extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              TextFormField(
-                                initialValue: leftOption.text,
-                                decoration: const InputDecoration(
-                                  labelText: "العنصر الأيمن",
-                                  border: OutlineInputBorder(),
+                              Focus(
+                                onFocusChange: (hasFocus) {
+                                  if (!hasFocus) checkAutoDelete();
+                                },
+                                child: TextFormField(
+                                  initialValue: leftOption.text,
+                                  decoration: InputDecoration(
+                                    labelText: "العنصر الأيمن",
+                                    border: const OutlineInputBorder(),
+                                    // ✅ T2: تغيير الأيقونة إلى لاحقة
+                                    suffixIcon: PopupMenuButton<String>(
+                                      icon: const Icon(Icons.attach_file,
+                                          size: 20),
+                                      onSelected: (value) {
+                                        if (value == 'camera') {
+                                          controller.pickImageForOption(
+                                              controller.matchingLeftItems,
+                                              index,
+                                              fromCamera: true);
+                                        } else if (value == 'gallery') {
+                                          controller.pickImageForOption(
+                                              controller.matchingLeftItems,
+                                              index);
+                                        } else if (value == 'audio') {
+                                          controller.pickAudioForOption(
+                                              controller.matchingLeftItems,
+                                              index);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        const PopupMenuItem<String>(
+                                            value: 'camera',
+                                            child: Text('كاميرا')),
+                                        const PopupMenuItem<String>(
+                                            value: 'gallery',
+                                            child: Text('معرض')),
+                                        const PopupMenuItem<String>(
+                                            value: 'audio',
+                                            child: Text('صوت')),
+                                      ],
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    if (index <
+                                        controller.matchingLeftItems.length) {
+                                      controller.matchingLeftItems[index] =
+                                          leftOption.copyWith(text: value);
+                                    }
+
+                                    // ✅ T2: إضافة حقل تالي تلقائيًا
+                                    // ✅ T1: إصلاح خطأ .text.isNotEmpty
+                                    if (index ==
+                                            controller.matchingLeftItems
+                                                    .length -
+                                                1 &&
+                                        value.isNotEmpty &&
+                                        (controller.matchingRightItems[index]
+                                                    .text ??
+                                                '')
+                                            .isNotEmpty) {
+                                      controller
+                                          .addField(QuestionType.matching);
+                                    }
+                                  },
+                                  validator: (value) {
+                                    // ✅ T3: تعديل التحقق
+                                    final bool isEmpty = (value == null || value.isEmpty) &&
+                                        (leftOption.imageUrl ?? '').isEmpty &&
+                                        (leftOption.audioUrl ?? '').isEmpty;
+                                    
+                                    if (isEmpty && index < 2) {
+                                      return "الحقل إجباري";
+                                    }
+                                    return null;
+                                  },
                                 ),
-                                onChanged: (value) {
-                                  // تحديث قيمة العنصر الأيمن
-                                  controller.matchingLeftItems[index] =
-                                      leftOption.copyWith(text: value);
-                                },
-                                validator: (value) {
-                                  if ((value == null || value.isEmpty) &&
-                                      leftOption.imageUrl == null &&
-                                      leftOption.audioUrl == null) {
-                                    return "العنصر لا يمكن أن يكون فارغًا.";
-                                  }
-                                  return null;
-                                },
                               ),
-                              // 💡 إضافة أزرار الوسائط للعنصر الأيمن
-                              _buildMediaButtons(controller, leftOption, index,
-                                  controller.matchingLeftItems),
+                              // ✅ T3: عرض مرفقات الخيار الأيمن
+                              _buildOptionMediaAttachments(
+                                leftOption,
+                                onClearImage: () =>
+                                    controller.clearMediaForOption(
+                                        controller.matchingLeftItems, index,
+                                        clearImage: true),
+                                onClearAudio: () =>
+                                    controller.clearMediaForOption(
+                                        controller.matchingLeftItems, index,
+                                        clearAudio: true),
+                              ),
                             ],
                           ),
                         ),
@@ -470,39 +690,101 @@ class QuestionDialog extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              TextFormField(
-                                initialValue: rightOption.text,
-                                decoration: const InputDecoration(
-                                  labelText: "العنصر الأيسر",
-                                  border: OutlineInputBorder(),
+                              Focus(
+                                onFocusChange: (hasFocus) {
+                                  if (!hasFocus) checkAutoDelete();
+                                },
+                                child: TextFormField(
+                                  initialValue: rightOption.text,
+                                  decoration: InputDecoration(
+                                    labelText: "العنصر الأيسر",
+                                    border: const OutlineInputBorder(),
+                                    // ✅ T2: تغيير الأيقونة إلى لاحقة
+                                    suffixIcon: PopupMenuButton<String>(
+                                      icon: const Icon(Icons.attach_file,
+                                          size: 20),
+                                      onSelected: (value) {
+                                        if (value == 'camera') {
+                                          controller.pickImageForOption(
+                                              controller.matchingRightItems,
+                                              index,
+                                              fromCamera: true);
+                                        } else if (value == 'gallery') {
+                                          controller.pickImageForOption(
+                                              controller.matchingRightItems,
+                                              index);
+                                        } else if (value == 'audio') {
+                                          controller.pickAudioForOption(
+                                              controller.matchingRightItems,
+                                              index);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        const PopupMenuItem<String>(
+                                            value: 'camera',
+                                            child: Text('كاميرا')),
+                                        const PopupMenuItem<String>(
+                                            value: 'gallery',
+                                            child: Text('معرض')),
+                                        const PopupMenuItem<String>(
+                                            value: 'audio',
+                                            child: Text('صوت')),
+                                      ],
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    if (index <
+                                        controller.matchingRightItems.length) {
+                                      controller.matchingRightItems[index] =
+                                          rightOption.copyWith(text: value);
+                                    }
+
+                                    // ✅ T2: إضافة حقل تالي تلقائيًا
+                                    // ✅ T1: إصلاح خطأ .text.isNotEmpty
+                                    if (index ==
+                                            controller.matchingRightItems
+                                                    .length -
+                                                1 &&
+                                        value.isNotEmpty &&
+                                        (controller.matchingLeftItems[index]
+                                                    .text ??
+                                                '')
+                                            .isNotEmpty) {
+                                      controller
+                                          .addField(QuestionType.matching);
+                                    }
+                                  },
+                                  validator: (value) {
+                                    // ✅ T3: تعديل التحقق
+                                    final bool isEmpty = (value == null || value.isEmpty) &&
+                                        (rightOption.imageUrl ?? '').isEmpty &&
+                                        (rightOption.audioUrl ?? '').isEmpty;
+                                    
+                                    if (isEmpty && index < 2) {
+                                      return "الحقل إجباري";
+                                    }
+                                    return null;
+                                  },
                                 ),
-                                onChanged: (value) {
-                                  // تحديث قيمة العنصر الأيسر
-                                  controller.matchingRightItems[index] =
-                                      rightOption.copyWith(text: value);
-                                },
-                                validator: (value) {
-                                  if ((value == null || value.isEmpty) &&
-                                      rightOption.imageUrl == null &&
-                                      rightOption.audioUrl == null) {
-                                    return "العنصر لا يمكن أن يكون فارغًا.";
-                                  }
-                                  return null;
-                                },
                               ),
-                              // 💡 إضافة أزرار الوسائط للعنصر الأيسر
-                              _buildMediaButtons(controller, rightOption, index,
-                                  controller.matchingRightItems),
+                              // ✅ T3: عرض مرفقات الخيار الأيسر
+                              _buildOptionMediaAttachments(
+                                rightOption,
+                                onClearImage: () =>
+                                    controller.clearMediaForOption(
+                                        controller.matchingRightItems, index,
+                                        clearImage: true),
+                                onClearAudio: () =>
+                                    controller.clearMediaForOption(
+                                        controller.matchingRightItems, index,
+                                        clearAudio: true),
+                              ),
                             ],
                           ),
                         ),
-                        IconButton(
-                            icon: const Icon(Icons.remove_circle,
-                                color: Colors.red),
-                            onPressed: () {
-                              controller.removeField(
-                                  QuestionType.matching, index);
-                            }),
+                        // ✅ T2: إزالة زر الحذف اليدوي
+                        // if (index > 1) ... else ... // ⛔️ تم الحذف
                       ],
                     ),
                     const Divider(height: 10, thickness: 1),
@@ -514,7 +796,7 @@ class QuestionDialog extends StatelessWidget {
     );
   }
 
-  // 💡 حقول الترتيب - تم إضافة دعم الصورة والصوت
+  // 💡 حقول الترتيب
   Widget _buildOrderingFields(QuestionDialogController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,6 +817,11 @@ class QuestionDialog extends StatelessWidget {
                 // الترتيب الصحيح يُستنتج من ترتيب القائمة عند الحفظ
               },
               itemBuilder: (context, index) {
+                // التأكد من أن العنصر لا يزال موجوداً
+                if (index >= controller.orderingItems.length) {
+                  // هذا العنصر (key) هو لـ ReorderableListView
+                  return Card(key: ValueKey('empty_$index'));
+                }
                 final option = controller.orderingItems[index];
 
                 return Card(
@@ -543,41 +830,105 @@ class QuestionDialog extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Expanded(
-                              child: TextFormField(
-                                initialValue:
-                                    option.text, // استخدام القيمة مباشرة
-                                decoration: InputDecoration(
-                                  labelText: "العنصر ${index + 1}",
-                                  border: const OutlineInputBorder(),
-                                ),
-                                onChanged: (value) {
-                                  // تحديث قيمة الـ Option في الكنترولر عند تغيير حقل النص
-                                  controller.orderingItems[index] =
-                                      option.copyWith(text: value);
-                                },
-                                validator: (value) {
-                                  if ((value == null || value.isEmpty) &&
-                                      option.imageUrl == null &&
-                                      option.audioUrl == null) {
-                                    return "العنصر لا يمكن أن يكون فارغًا.";
+                              // ✅ T2: إضافة Focus
+                              child: Focus(
+                                onFocusChange: (hasFocus) {
+                                  // ✅ T1: تعديل شرط الحذف التلقائي
+                                  if (!hasFocus &&
+                                      controller.orderingItems.length >
+                                          2 && // يجب أن يكون هناك أكثر من حقلين
+                                      index < controller.orderingItems.length) {
+                                    final option =
+                                        controller.orderingItems[index];
+                                    final bool isEmpty =
+                                        (option.text ?? '').isEmpty &&
+                                            (option.imageUrl ?? '').isEmpty &&
+                                            (option.audioUrl ?? '').isEmpty;
+                                    if (isEmpty) {
+                                      Future.delayed(Duration.zero, () {
+                                        controller.removeField(
+                                            QuestionType.ordering, index);
+                                      });
+                                    }
                                   }
-                                  return null;
                                 },
+                                child: TextFormField(
+                                  initialValue:
+                                      option.text, // استخدام القيمة مباشرة
+                                  decoration: InputDecoration(
+                                    labelText: "العنصر ${index + 1}",
+                                    border: const OutlineInputBorder(),
+                                    // ✅ T2: تغيير الأيقونة إلى لاحقة
+                                    suffixIcon: PopupMenuButton<String>(
+                                      icon: const Icon(Icons.attach_file,
+                                          size: 20),
+                                      onSelected: (value) {
+                                        if (value == 'camera') {
+                                          controller.pickImageForOption(
+                                              controller.orderingItems, index,
+                                              fromCamera: true);
+                                        } else if (value == 'gallery') {
+                                          controller.pickImageForOption(
+                                              controller.orderingItems, index);
+                                        } else if (value == 'audio') {
+                                          controller.pickAudioForOption(
+                                              controller.orderingItems, index);
+                                        }
+                                      },
+                                      itemBuilder: (BuildContext context) =>
+                                          <PopupMenuEntry<String>>[
+                                        const PopupMenuItem<String>(
+                                            value: 'camera',
+                                            child: Text('كاميرا')),
+                                        const PopupMenuItem<String>(
+                                            value: 'gallery',
+                                            child: Text('معرض')),
+                                        const PopupMenuItem<String>(
+                                            value: 'audio',
+                                            child: Text('صوت')),
+                                      ],
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    if (index <
+                                        controller.orderingItems.length) {
+                                      controller.orderingItems[index] =
+                                          option.copyWith(text: value);
+                                    }
+
+                                    // ✅ T2: إضافة حقل تالي تلقائيًا
+                                    if (index ==
+                                            controller.orderingItems.length -
+                                                1 &&
+                                        value.isNotEmpty) {
+                                      controller
+                                          .addField(QuestionType.ordering);
+                                    }
+                                  },
+                                  validator: (value) {
+                                    // ✅ T3: تعديل التحقق
+                                    final bool isEmpty =
+                                        (value == null || value.isEmpty) &&
+                                            (option.imageUrl ?? '').isEmpty &&
+                                            (option.audioUrl ?? '').isEmpty;
+                                    
+                                    // فقط الحقلين الأولين إجباريين
+                                    if (isEmpty && index < 2) {
+                                      return "يجب ملء العنصرين الأولين";
+                                    }
+                                    return null;
+                                  },
+                                ),
                               ),
                             ),
-                            IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  controller.removeField(
-                                    QuestionType.ordering,
-                                    index,
-                                  );
-                                }),
+                            // ✅ T2: إزالة زر الحذف اليدوي
+                            // if (index > 1) ... else ... // ⛔️ تم الحذف
+                            
                             // أيقونة السحب
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8.0),
@@ -585,8 +936,16 @@ class QuestionDialog extends StatelessWidget {
                             ),
                           ],
                         ),
-                        _buildMediaButtons(controller, option, index,
-                            controller.orderingItems),
+                        // ✅ T3: عرض المرفقات المختارة *لهذا الخيار*
+                        _buildOptionMediaAttachments(
+                          option,
+                          onClearImage: () => controller.clearMediaForOption(
+                              controller.orderingItems, index,
+                              clearImage: true),
+                          onClearAudio: () => controller.clearMediaForOption(
+                              controller.orderingItems, index,
+                              clearAudio: true),
+                        ),
                       ],
                     ),
                   ),
@@ -594,7 +953,6 @@ class QuestionDialog extends StatelessWidget {
               },
               itemCount: controller.orderingItems.length,
             )),
-        // بفرض أن لديك زر لإضافة عنصر جديد هنا
       ],
     );
   }
@@ -617,36 +975,11 @@ class QuestionDialog extends StatelessWidget {
     );
   }
 
+  // ✅ T1: إزالة الدالة بالكامل
+  /*
   // أزرار الإضافة لكل نوع سؤال
   Widget _buildAddButton(QuestionDialogController controller) {
-    switch (controller.selectedType.value) {
-      case QuestionType.mcq:
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text("أضف خيارًا"),
-          onPressed: () => controller.addField(QuestionType.mcq),
-        );
-      case QuestionType.fillBlank:
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text("أضف إجابة للفراغ"),
-          // لا نضيف هنا {{}} بل نعتمد على إضافة المستخدم لها في نص السؤال
-          onPressed: () => controller.addFillBlank(),
-        );
-      case QuestionType.matching:
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text("أضف زوج مطابقة"),
-          onPressed: () => controller.addField(QuestionType.matching),
-        );
-      case QuestionType.ordering:
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text("أضف عنصر ترتيب"),
-          onPressed: () => controller.addField(QuestionType.ordering),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+    ... 
   }
+  */
 }

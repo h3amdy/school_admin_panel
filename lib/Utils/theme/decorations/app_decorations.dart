@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 
 class AppDecorations {
   /// الكارد الأساسي
-  static BoxDecoration cardDecoration(BuildContext context, {bool selected = false}) {
+  static BoxDecoration cardDecoration(BuildContext context,
+      {bool selected = false}) {
     final theme = Theme.of(context);
     return BoxDecoration(
       boxShadow: [
         BoxShadow(
           offset: const Offset(0, 4),
-          color: selected
-              ? theme.colorScheme.primary.withOpacity(0.3)
-              : theme.shadowColor,
-          
+          color: selected ? theme.colorScheme.primary : theme.shadowColor,
         ),
       ],
       color: selected

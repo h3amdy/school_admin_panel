@@ -9,7 +9,7 @@ import 'package:ashil_school/features/home/view/home_page.dart';
 import 'package:ashil_school/models/user_model/user.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_storage/get_storage.dart';
 
 class AuthenticationRepository extends GetxController {
   static AuthenticationRepository get instance => Get.find();
@@ -34,40 +34,37 @@ class AuthenticationRepository extends GetxController {
     }
   }
 
-  /// حفظ المستخدم في SharedPreferences
-  Future<void> saveUserToPrefs(User user, String userToken) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        DBConstants.currentUser,
-        jsonEncode(user.toMap()),
-      );
-      await prefs.setString("token", userToken);
+ Future<void> saveUserToPrefs(User user, String userToken) async {
+  try {
+    final box = GetStorage();
+    await box.write(DBConstants.currentUser, jsonEncode(user.toMap()));
+    await box.write("token", userToken);
 
-      currentUser.value = user;
-      token.value = userToken;
-      currentUser.refresh();
-    } catch (e) {
-      debugPrint("❌ Error saving user to prefs: $e");
-    }
+    currentUser.value = user;
+    token.value = userToken;
+    currentUser.refresh();
+  } catch (e) {
+    debugPrint("❌ Error saving user to storage: $e");
   }
+}
 
-  /// جلب المستخدم من SharedPreferences
-  Future<User?> getUserFromPrefs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userString = prefs.getString(DBConstants.currentUser);
-      token.value = prefs.getString("token") ?? "";
+  /// جلب المستخدم من GetStorage
+Future<User?> getUserFromPrefs() async {
+  try {
+    final box = GetStorage();
+    final userString = box.read(DBConstants.currentUser);
+    token.value = box.read("token") ?? "";
 
-      if (userString != null) {
-        final userJson = jsonDecode(userString);
-        return User.fromMap(userJson);
-      }
-    } catch (e) {
-      debugPrint("❌ Error reading user from prefs: $e");
+    if (userString != null) {
+      final userJson = jsonDecode(userString);
+      return User.fromMap(userJson);
     }
-    return null;
+  } catch (e) {
+    debugPrint("❌ Error reading user from storage: $e");
   }
+  return null;
+}
+
 
   /// تسجيل الدخول
   Future<void> login(String username, String password) async {
@@ -103,23 +100,23 @@ class AuthenticationRepository extends GetxController {
   }
 
   /// تسجيل الخروج
-  Future<void> signOut() async {
-    KFullScreenLoader.openLoadingDialog(text: "جاري تسجيل الخروج...");
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(DBConstants.currentUser);
-      await prefs.remove("token");
+ Future<void> signOut() async {
+  KFullScreenLoader.openLoadingDialog(text: "جاري تسجيل الخروج...");
+  try {
+    final box = GetStorage();
+    await box.remove(DBConstants.currentUser);
+    await box.remove("token");
 
-      currentUser.value = null;
-      token.value = "";
+    currentUser.value = null;
+    token.value = "";
 
-      await Get.offAll(() => LoginPage());
-      KFullScreenLoader.stopLoading();
-    } catch (e) {
-      KFullScreenLoader.stopLoading();
-      KLoaders.error(title: "$e");
-    }
+    await Get.offAll(() => LoginPage());
+    KFullScreenLoader.stopLoading();
+  } catch (e) {
+    KFullScreenLoader.stopLoading();
+    KLoaders.error(title: "$e");
   }
+}
 
   bool get isLoggedIn => currentUser.value != null && token.isNotEmpty;
 }

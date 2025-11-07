@@ -1,10 +1,10 @@
 import 'package:ashil_school/Utils/constants/sizes.dart';
 import 'package:ashil_school/Utils/custom_dilog/confert_dilog.dart';
+import 'package:ashil_school/Utils/theme/decorations/app_decorations.dart';
 import 'package:ashil_school/features/lesson/models/lesson.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ashil_school/Utils/Styles.dart';
-import 'package:ashil_school/AppResources.dart';
 
 class LessonListWidget extends StatelessWidget {
   final RxList<LessonModel> lessons;
@@ -55,36 +55,40 @@ class LessonListWidget extends StatelessWidget {
     });
   }
 
-  Widget _lessonItem(BuildContext context, LessonModel lesson, bool isSelected) {
+  Widget _lessonItem(
+      BuildContext context, LessonModel lesson, bool isSelected) {
     return GestureDetector(
       onLongPress: () => showEditDeleteOptions(
         onEdit: () => onEdit(lesson), // استخدام دالة التعديل الممررة
         onDelete: () => onDelete(lesson.id), // استخدام دالة الحذف الممررة
       ),
       onTap: () => onLessonSelected(lesson), // استخدام دالة الاختيار الممررة
-      child: Card(
-        color: isSelected ? secondaryColor : null,
-        elevation: isSelected ? 4 : 1,
-        child: Padding(
-          padding: const EdgeInsets.all(KSizes.sm),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.book, color: isSelected ? Colors.white : null),
-              const SizedBox(width: 6),
-              Text(
-                lesson.title,
-                style: normalStyle(
-                  
-                  color: isSelected ? Colors.white : null,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: Align(
+          alignment: Alignment.center,
+          child: AnimatedContainer(
+            height: 60,
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(
+                horizontal: KSizes.sm, vertical: KSizes.sm),
+            decoration:
+                AppDecorations.cardDecoration(context, selected: isSelected),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.book, color: isSelected ? Colors.white : null),
+                const SizedBox(width: 6),
+                Text(
+                  lesson.title,
+                  style: normalStyle(
+                    color: isSelected ? Colors.white : null,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-        ),
-      ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          )),
     );
   }
 

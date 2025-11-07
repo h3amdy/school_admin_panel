@@ -4,15 +4,16 @@ import 'package:ashil_school/bindings/general_bindings.dart';
 import 'package:ashil_school/features/students/controllers/student_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 GlobalKey<NavigatorState> materialKey = GlobalKey<NavigatorState>();
-late SharedPreferences prefs;
 
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  prefs = await SharedPreferences.getInstance();
+ 
+  // [الخطوة الأساسية] تهيئة GetStorage بشكل غير متزامن
+  await GetStorage.init();
   runApp(const MyApp());
 }
 
