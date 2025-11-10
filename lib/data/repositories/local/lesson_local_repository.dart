@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:ashil_school/data/local/app_database.dart';
+import 'package:ashil_school/features/lesson/models/content_block.dart';
 import 'package:ashil_school/features/lesson/models/lesson.dart';
 import 'package:drift/drift.dart';
 import 'package:get/get.dart' hide Value;
@@ -10,18 +12,40 @@ class LessonLocalRepository {
 
   LessonLocalRepository();
 
+  // [تعديل] 1. تحديث _fromRow ليقرأ الحقول الجديدة
   LessonModel _fromRow(LessonTable row) {
+    List<ContentBlock> blocks = [];
+    try {
+      final List<dynamic> decoded = jsonDecode(row.content);
+      blocks = decoded
+          .map((item) => ContentBlock.fromMap(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      blocks = [];
+    }
+
     return LessonModel(
       id: row.id,
       title: row.title,
-      content: row.content,
       unitId: row.unitId,
       order: row.order,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isSynced: row.isSynced,
       deleted: row.deleted,
+      profileImageUrl: row.profileImageUrl,
+      audioUrl: row.audioUrl,
+      contentBlocks: blocks,
     );
+  }
+  
+  Future<LessonModel?> getLessonById(String id) async {
+    final query = db.select(db.lessons)..where((tbl) => tbl.id.equals(id));
+    final row = await query.getSingleOrNull();
+    if (row != null) {
+      return _fromRow(row);
+    }
+    return null;
   }
 
   Future<List<LessonModel>> getAllLessonsByUnitId(String unitId, {bool includeDeleted = false}) async {
@@ -33,50 +57,56 @@ class LessonLocalRepository {
     return rows.map(_fromRow).toList();
   }
 
-  Future<LessonModel> createLocalLesson({
-    required String title,
-    required String content,
-    required String unitId,
-    int? order,
-  }) async {
-    final id = _uuid.v4();
+  // [تعديل] 2. تحديث createLocalLesson ليأخذ LessonModel كاملاً
+  Future<LessonModel> createLocalLesson(LessonModel lesson) async {
+    // نضمن أن له ID و timestamps
     final now = DateTime.now();
-    final lesson = LessonModel(
-      id: id,
-      title: title,
-      content: content,
-      unitId: unitId,
-      order: order,
-      createdAt: now,
+    final lessonToInsert = lesson.copyWith(
+      id: lesson.id.isEmpty ? _uuid.v4() : lesson.id,
+      createdAt: lesson.createdAt ?? now,
       updatedAt: now,
+      isSynced: false,
+      deleted: false,
     );
+
     await db.into(db.lessons).insert(
           LessonsCompanion.insert(
-            id: lesson.id,
-            title: lesson.title,
-            content: lesson.content,
-            unitId: lesson.unitId,
-            order: Value(lesson.order),
-            createdAt: Value(lesson.createdAt!),
-            updatedAt: Value(lesson.updatedAt!),
+            id: lessonToInsert.id,
+            title: lessonToInsert.title,
+            unitId: lessonToInsert.unitId,
+            order: Value(lessonToInsert.order),
+            createdAt: Value(lessonToInsert.createdAt!),
+            updatedAt: Value(lessonToInsert.updatedAt!),
             isSynced: const Value(false),
             deleted: const Value(false),
+            // [جديد]
+            profileImageUrl: Value(lessonToInsert.profileImageUrl),
+            audioUrl: Value(lessonToInsert.audioUrl),
+            // [إصلاح الخطأ 1] تغليف الناتج بـ Value()
+            content: Value(jsonEncode(lessonToInsert.contentBlocks.map((b) => b.toMap()).toList())),
           ),
         );
-    return lesson;
+    return lessonToInsert;
   }
 
+  // [تعديل] 3. تحديث updateLessonLocal
   Future<void> updateLessonLocal(LessonModel lesson) async {
     final now = DateTime.now();
+    final jsonContent = jsonEncode(lesson.contentBlocks.map((b) => b.toMap()).toList());
+
     await (db.update(db.lessons)..where((t) => t.id.equals(lesson.id))).write(
           LessonsCompanion(
             title: Value(lesson.title),
-            content: Value(lesson.content),
             unitId: Value(lesson.unitId),
             order: Value(lesson.order),
             updatedAt: Value(now),
             isSynced: const Value(false),
             deleted: Value(lesson.deleted),
+            // [جديد]
+            profileImageUrl: Value(lesson.profileImageUrl),
+            audioUrl: Value(lesson.audioUrl),
+            // [إصلاح الخطأ 1] تغليف الناتج بـ Value()
+            content: Value(jsonContent),
           ),
         );
   }
@@ -105,18 +135,25 @@ class LessonLocalRepository {
         );
   }
 
+  // [تعديل] 4. تحديث upsertLesson
   Future<void> upsertLesson(LessonModel lessonFromServer) async {
+    final jsonContent = jsonEncode(lessonFromServer.contentBlocks.map((b) => b.toMap()).toList());
+
     await db.into(db.lessons).insertOnConflictUpdate(
           LessonsCompanion.insert(
             id: lessonFromServer.id,
             title: lessonFromServer.title,
-            content: lessonFromServer.content,
             unitId: lessonFromServer.unitId,
             order: Value(lessonFromServer.order),
-            createdAt: Value(lessonFromServer.createdAt!),
-            updatedAt: Value(lessonFromServer.updatedAt!),
+            createdAt: Value(lessonFromServer.createdAt ?? DateTime.now()), // التأكد من عدم إرسال null
+            updatedAt: Value(lessonFromServer.updatedAt ?? DateTime.now()), // التأكد من عدم إرسال null
             isSynced: const Value(true),
             deleted: Value(lessonFromServer.deleted),
+            // [جديد]
+            profileImageUrl: Value(lessonFromServer.profileImageUrl),
+            audioUrl: Value(lessonFromServer.audioUrl),
+            // [إصلاح الخطأ 1] تغليف الناتج بـ Value()
+            content: Value(jsonContent),
           ),
         );
   }

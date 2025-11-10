@@ -1,4 +1,4 @@
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/Utils/question/question_utils.dart';
 import 'package:ashil_school/features/question/models/base_question.dart';
 import 'package:flutter/material.dart';

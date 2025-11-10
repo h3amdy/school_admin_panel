@@ -1,5 +1,5 @@
 import 'package:ashil_school/Utils/constants/sizes.dart';
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/Utils/question/question_utils.dart';
 import 'package:ashil_school/common/widgets/section_heading.dart';
 import 'package:ashil_school/features/question/controllers/question_controller.dart';
@@ -186,7 +186,7 @@ class QuestionDialog extends StatelessWidget {
               ),
             ),
             // ✅ T1: إزالة زر الإضافة اليدوي
-            // Obx(() => _buildAddButton(controller)), // ⛔️ تم الحذف
+            Obx(() => _buildAddButton(controller)), // ⛔️ تم الحذف
             const SizedBox(height: KSizes.spaceBewItems),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -231,8 +231,7 @@ class QuestionDialog extends StatelessWidget {
           'صورة مرفقة: ${controller.questionImageUrl.value!.split('/').last}';
       icon = Icons.image;
     } else if (controller.questionAudioUrl.value != null) {
-      title =
-          'صوت مرفق: ${controller.questionAudioUrl.value!.split('/').last}';
+      title = 'صوت مرفق: ${controller.questionAudioUrl.value!.split('/').last}';
       icon = Icons.audiotrack;
     }
 
@@ -381,14 +380,14 @@ class QuestionDialog extends StatelessWidget {
                               }
                             },
                             child: TextFormField(
-                              initialValue: option.text, // استخدام القيمة مباشرة
+                              initialValue:
+                                  option.text, // استخدام القيمة مباشرة
                               decoration: InputDecoration(
                                 labelText: "خيار ${index + 1}",
                                 border: const OutlineInputBorder(),
                                 // ✅ T2: تغيير الأيقونة إلى لاحقة
                                 suffixIcon: PopupMenuButton<String>(
-                                  icon: const Icon(Icons.attach_file,
-                                      size: 20),
+                                  icon: const Icon(Icons.attach_file, size: 20),
                                   onSelected: (value) {
                                     if (value == 'camera') {
                                       controller.pickImageForOption(
@@ -405,14 +404,11 @@ class QuestionDialog extends StatelessWidget {
                                   itemBuilder: (BuildContext context) =>
                                       <PopupMenuEntry<String>>[
                                     const PopupMenuItem<String>(
-                                        value: 'camera',
-                                        child: Text('كاميرا')),
+                                        value: 'camera', child: Text('كاميرا')),
                                     const PopupMenuItem<String>(
-                                        value: 'gallery',
-                                        child: Text('معرض')),
+                                        value: 'gallery', child: Text('معرض')),
                                     const PopupMenuItem<String>(
-                                        value: 'audio',
-                                        child: Text('صوت')),
+                                        value: 'audio', child: Text('صوت')),
                                   ],
                                 ),
                               ),
@@ -424,8 +420,7 @@ class QuestionDialog extends StatelessWidget {
                                 }
 
                                 // ✅ T2: إضافة حقل تالي تلقائيًا
-                                if (index ==
-                                        controller.mcqOptions.length - 1 &&
+                                if (index == controller.mcqOptions.length - 1 &&
                                     value.isNotEmpty) {
                                   controller.addField(QuestionType.mcq);
                                 }
@@ -436,7 +431,7 @@ class QuestionDialog extends StatelessWidget {
                                     (value == null || value.isEmpty) &&
                                         (option.imageUrl ?? '').isEmpty &&
                                         (option.audioUrl ?? '').isEmpty;
-                                
+
                                 // فقط الحقلين الأولين إجباريين
                                 if (isEmpty && index < 2) {
                                   return "يجب ملء الخيارين الأولين";
@@ -562,7 +557,8 @@ class QuestionDialog extends StatelessWidget {
               // دالة التحقق من الحذف التلقائي
               void checkAutoDelete() {
                 // ✅ T1: تعديل شرط الحذف التلقائي
-                if (controller.matchingLeftItems.length > 2 && // يجب أن يكون هناك أكثر من حقلين
+                if (controller.matchingLeftItems.length >
+                        2 && // يجب أن يكون هناك أكثر من حقلين
                     index < controller.matchingLeftItems.length) {
                   final left = controller.matchingLeftItems[index];
                   final right = controller.matchingRightItems[index];
@@ -630,8 +626,7 @@ class QuestionDialog extends StatelessWidget {
                                             value: 'gallery',
                                             child: Text('معرض')),
                                         const PopupMenuItem<String>(
-                                            value: 'audio',
-                                            child: Text('صوت')),
+                                            value: 'audio', child: Text('صوت')),
                                       ],
                                     ),
                                   ),
@@ -645,8 +640,8 @@ class QuestionDialog extends StatelessWidget {
                                     // ✅ T2: إضافة حقل تالي تلقائيًا
                                     // ✅ T1: إصلاح خطأ .text.isNotEmpty
                                     if (index ==
-                                            controller.matchingLeftItems
-                                                    .length -
+                                            controller
+                                                    .matchingLeftItems.length -
                                                 1 &&
                                         value.isNotEmpty &&
                                         (controller.matchingRightItems[index]
@@ -659,10 +654,11 @@ class QuestionDialog extends StatelessWidget {
                                   },
                                   validator: (value) {
                                     // ✅ T3: تعديل التحقق
-                                    final bool isEmpty = (value == null || value.isEmpty) &&
+                                    final bool isEmpty = (value == null ||
+                                            value.isEmpty) &&
                                         (leftOption.imageUrl ?? '').isEmpty &&
                                         (leftOption.audioUrl ?? '').isEmpty;
-                                    
+
                                     if (isEmpty && index < 2) {
                                       return "الحقل إجباري";
                                     }
@@ -728,8 +724,7 @@ class QuestionDialog extends StatelessWidget {
                                             value: 'gallery',
                                             child: Text('معرض')),
                                         const PopupMenuItem<String>(
-                                            value: 'audio',
-                                            child: Text('صوت')),
+                                            value: 'audio', child: Text('صوت')),
                                       ],
                                     ),
                                   ),
@@ -743,8 +738,8 @@ class QuestionDialog extends StatelessWidget {
                                     // ✅ T2: إضافة حقل تالي تلقائيًا
                                     // ✅ T1: إصلاح خطأ .text.isNotEmpty
                                     if (index ==
-                                            controller.matchingRightItems
-                                                    .length -
+                                            controller
+                                                    .matchingRightItems.length -
                                                 1 &&
                                         value.isNotEmpty &&
                                         (controller.matchingLeftItems[index]
@@ -757,10 +752,11 @@ class QuestionDialog extends StatelessWidget {
                                   },
                                   validator: (value) {
                                     // ✅ T3: تعديل التحقق
-                                    final bool isEmpty = (value == null || value.isEmpty) &&
+                                    final bool isEmpty = (value == null ||
+                                            value.isEmpty) &&
                                         (rightOption.imageUrl ?? '').isEmpty &&
                                         (rightOption.audioUrl ?? '').isEmpty;
-                                    
+
                                     if (isEmpty && index < 2) {
                                       return "الحقل إجباري";
                                     }
@@ -889,8 +885,7 @@ class QuestionDialog extends StatelessWidget {
                                             value: 'gallery',
                                             child: Text('معرض')),
                                         const PopupMenuItem<String>(
-                                            value: 'audio',
-                                            child: Text('صوت')),
+                                            value: 'audio', child: Text('صوت')),
                                       ],
                                     ),
                                   ),
@@ -916,7 +911,7 @@ class QuestionDialog extends StatelessWidget {
                                         (value == null || value.isEmpty) &&
                                             (option.imageUrl ?? '').isEmpty &&
                                             (option.audioUrl ?? '').isEmpty;
-                                    
+
                                     // فقط الحقلين الأولين إجباريين
                                     if (isEmpty && index < 2) {
                                       return "يجب ملء العنصرين الأولين";
@@ -928,7 +923,7 @@ class QuestionDialog extends StatelessWidget {
                             ),
                             // ✅ T2: إزالة زر الحذف اليدوي
                             // if (index > 1) ... else ... // ⛔️ تم الحذف
-                            
+
                             // أيقونة السحب
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8.0),
@@ -976,10 +971,38 @@ class QuestionDialog extends StatelessWidget {
   }
 
   // ✅ T1: إزالة الدالة بالكامل
-  /*
+
+  // أزرار الإضافة لكل نوع سؤال
   // أزرار الإضافة لكل نوع سؤال
   Widget _buildAddButton(QuestionDialogController controller) {
-    ... 
+    switch (controller.selectedType.value) {
+      // case QuestionType.mcq:
+      //   return OutlinedButton.icon(
+      //     icon: const Icon(Icons.add),
+      //     label: const Text("أضف خيارًا"),
+      //     onPressed: () => controller.addField(QuestionType.mcq),
+      //   );
+      case QuestionType.fillBlank:
+        return OutlinedButton.icon(
+          icon: const Icon(Icons.add),
+          label: const Text("أضف إجابة للفراغ"),
+          // لا نضيف هنا {{}} بل نعتمد على إضافة المستخدم لها في نص السؤال
+          onPressed: () => controller.addFillBlank(),
+        );
+      // case QuestionType.matching:
+      //   return OutlinedButton.icon(
+      //     icon: const Icon(Icons.add),
+      //     label: const Text("أضف زوج مطابقة"),
+      //     onPressed: () => controller.addField(QuestionType.matching),
+      //   );
+      // case QuestionType.ordering:
+      //   return OutlinedButton.icon(
+      //     icon: const Icon(Icons.add),
+      //     label: const Text("أضف عنصر ترتيب"),
+      //     onPressed: () => controller.addField(QuestionType.ordering),
+      //   );
+      default:
+        return const SizedBox.shrink();
+    }
   }
-  */
 }

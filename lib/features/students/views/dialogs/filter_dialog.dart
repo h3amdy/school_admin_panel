@@ -1,4 +1,4 @@
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/features/students/controllers/student_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -30,11 +30,11 @@ class SubjectStatsController extends GetxController {
     _questionRepo = QuestionLocalRepository();
 
     // بدء جلب الإحصائيات
-    _fetchStats();
+    refreshStats(); // [MODIFIED] استدعاء الدالة العامة
   }
 
-  /// دالة لجلب الإحصائيات من قاعدة البيانات المحلية
-  Future<void> _fetchStats() async {
+  /// [MODIFIED] دالة لجلب الإحصائيات من قاعدة البيانات المحلية (أصبحت عامة)
+  Future<void> refreshStats() async {
     isLoading.value = true;
     try {
       int tempLessonCount = 0;

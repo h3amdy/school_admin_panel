@@ -1,6 +1,4 @@
-import 'package:ashil_school/Utils/constants/colors.dart';
-import 'package:ashil_school/Utils/constants/sizes.dart';
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/Utils/helpers/loaders/loaders.dart';
 import 'package:ashil_school/features/unit/controllers/unit_controller.dart';
 import 'package:ashil_school/features/unit/models/unit.dart';
@@ -10,11 +8,13 @@ import 'package:get/get.dart';
 class UnitDialog extends StatefulWidget {
   final UnitController unitController;
   final UnitModel? unitToEdit;
+  final VoidCallback? onUnitAddedCallback; // [NEW]
 
   const UnitDialog({
     super.key,
     required this.unitController,
     this.unitToEdit,
+    this.onUnitAddedCallback, // [NEW]
   });
 
   @override
@@ -37,87 +37,89 @@ class _UnitDialogState extends State<UnitDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.unitToEdit != null;
-    final dialogTitle = isEditing ? "✏️ تعديل الوحدة" : " إضافة وحدة جديدة";
-    final buttonText = isEditing ? "حفظ" : "إضافة";
+    final title = isEditing ? "تعديل الوحدة" : "إضافة وحدة جديدة";
+    final buttonText = isEditing ? "حفظ التعديلات" : "إضافة";
     final unitController = widget.unitController;
 
     return CustomDialog(
-      title: dialogTitle,
+      title: title,
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: unitController.nameController,
-                decoration: const InputDecoration(labelText: "اسم الوحدة"),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال اسم الوحدة';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: KSizes.spaceBewItems),
-              TextFormField(
-                controller: unitController.descriptionController,
-                decoration:
-                    const InputDecoration(labelText: "وصف الوحدة (اختياري)"),
-                maxLines: 3,
-              ),
-              const SizedBox(height: KSizes.spaceBewItems),
-              TextFormField(
-                controller: unitController.orderController,
-                // ✅ هنا تم حذف (اختياري)
-                decoration: const InputDecoration(labelText: "ترتيب الوحدة"),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  // ✅ هنا أصبح التحقق إجبارياً
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال رقم الترتيب';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'الرجاء إدخال رقم صحيح للترتيب';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: KSizes.spaceBewItems),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: KColors.warning)),
-                    child: const Text("إلغاء"),
-                    onPressed: () => Get.back(),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(100, 40),
-                    ),
-                    child: Text(buttonText),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        if (isEditing) {
-                          unitController.updateUnit(widget.unitToEdit!.id);
-                        } else {
-                          unitController.addUnit();
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              fit: FlexFit.loose,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: unitController.nameController,
+                      decoration: const InputDecoration(labelText: "اسم الوحدة"),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'يرجى إدخال اسم الوحدة';
                         }
-                        Get.back();
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: unitController.orderController,
+                      decoration: const InputDecoration(labelText: "ترتيب الوحدة"),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'يرجى إدخال ترتيب الوحدة';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'يرجى إدخال رقم صحيح للترتيب';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: unitController.descriptionController,
+                      decoration: const InputDecoration(labelText: "وصف الوحدة (اختياري)"),
+                      minLines: 3,
+                      maxLines: 5,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                OutlinedButton(
+                  child: const Text("إلغاء"),
+                  onPressed: () => Get.back(),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      if (isEditing) {
+                        unitController.updateUnit(widget.unitToEdit!.id);
                       } else {
-                        KLoaders.error(
-                            title: "خطأ",
-                            message: "الرجاء مراجعة البيانات المدخلة");
+                        // [MODIFIED] تمرير الـ Callback
+                        unitController.addUnit(
+                            onUnitAddedCallback: widget.onUnitAddedCallback);
                       }
-                    },
-                  ),
-                ],
-              )
-            ],
-          ),
+                      Get.back();
+                    } else {
+                      KLoaders.error(
+                          title: "خطأ",
+                          message: "الرجاء مراجعة البيانات المدخلة");
+                    }
+                  },
+                  child: Text(buttonText),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

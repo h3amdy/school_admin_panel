@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class UnitController extends GetxController {
+  // ... (الخصائص كما هي) ...
   final String subjectId;
 
   final nameController = TextEditingController();
@@ -19,7 +20,7 @@ class UnitController extends GetxController {
   final units = <UnitModel>[].obs;
   final isLoading = false.obs;
   final error = RxnString();
-  final _isSyncing = false.obs;
+  final isSyncing = false.obs;
   final selectedUnit = Rxn<UnitModel>();
 
   late final UnitLocalRepository localRepo;
@@ -46,6 +47,7 @@ class UnitController extends GetxController {
 
   @override
   void onClose() {
+    // ... (كما هو) ...
     nameController.dispose();
     orderController.dispose();
     descriptionController.dispose();
@@ -53,14 +55,16 @@ class UnitController extends GetxController {
   }
 
   void prepareForAdd() {
+    // ... (كما هو) ...
     nameController.clear();
     descriptionController.clear();
+    units.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
     final nextOrder = units.isEmpty ? 1 : (units.last.order ?? 0) + 1;
-    // ✅ هنا نقوم بملء حقل الترتيب بقيمة افتراضية إجبارية
     orderController.text = nextOrder.toString();
   }
 
   void prepareForEdit(UnitModel unit) {
+    // ... (كما هو) ...
     nameController.text = unit.name;
     orderController.text = unit.order?.toString() ?? '';
     descriptionController.text = unit.description ?? '';
@@ -70,64 +74,80 @@ class UnitController extends GetxController {
     await loadAndSyncUnits();
   }
 
+  // [MODIFIED] 2. تم تعديل الدالة بالكامل لتطبيق "العرض المحلي أولاً"
   Future<void> loadAndSyncUnits() async {
     isLoading.value = true;
     error.value = null;
     try {
-      final local = await localRepo.getUnitsBySubjectId(subjectId);
-      units.assignAll(local);
+      // 1. [NEW] تحميل وعرض البيانات المحلية *أولاً*
+      List<UnitModel> localUnits =
+          await localRepo.getUnitsBySubjectId(subjectId);
+
+      // 2. [NEW] التحديث الفوري للقائمة (هذا سيشغل SubjectDetailsController)
+      units.assignAll(localUnits);
       units.sort((a, b) {
         if (a.order == null && b.order == null) return 0;
         if (a.order == null) return 1;
         if (b.order == null) return -1;
         return a.order!.compareTo(b.order!);
       });
+      _updateSelectedUnit(localUnits); // تحديث الوحدة المختارة
+      isLoading.value = false; // [NEW] إيقاف التحميل الأولي
 
-      if (units.isNotEmpty && selectedUnit.value == null) {
-        selectedUnit.value = units.first;
-      } else if (units.isEmpty) {
-        selectedUnit.value = null;
-      } else if (selectedUnit.value != null && !units.any((unit) => unit.id == selectedUnit.value!.id)) {
-        selectedUnit.value = units.first;
-      }
-
-      isLoading.value = false;
+      // 3. [NEW] المزامنة في الخلفية (إذا كان متصلاً)
       if (await NetworkManager.instance.isConnected()) {
         final lastSyncAt = await syncRepo.getLastSync(DBConstants.unitsTable);
         await syncService.pullUpdates(lastSyncAt);
-        final refreshed = await localRepo.getUnitsBySubjectId(subjectId);
-        units.assignAll(refreshed);
+
+        // 4. [NEW] إعادة تحميل البيانات المحدثة
+        List<UnitModel> refreshedUnits =
+            await localRepo.getUnitsBySubjectId(subjectId);
+
+        // 5. [NEW] التحديث الثاني (لن يسبب تكراراً بسبب "القفل" في SubjectDetailsController)
+        units.assignAll(refreshedUnits);
         units.sort((a, b) {
           if (a.order == null && b.order == null) return 0;
           if (a.order == null) return 1;
           if (b.order == null) return -1;
           return a.order!.compareTo(b.order!);
         });
-
-        final currentSelectionId = selectedUnit.value?.id;
-        if (currentSelectionId != null && refreshed.any((u) => u.id == currentSelectionId)) {
-          selectedUnit.value = refreshed.firstWhere((u) => u.id == currentSelectionId);
-        } else if (refreshed.isNotEmpty) {
-          selectedUnit.value = refreshed.first;
-        } else {
-          selectedUnit.value = null;
-        }
+        _updateSelectedUnit(refreshedUnits); // تحديث الوحدة المختارة
       }
     } catch (e) {
       print("Error loading units: $e");
       error.value = e.toString();
       KLoaders.error(title: "خطأ في التحميل/المزامنة", message: e.toString());
     } finally {
-      isLoading.value = false;
+      isLoading.value = false; // التأكد من إيقاف التحميل في كل الأحوال
     }
   }
 
-  Future<void> addUnit() async {
-    if (_isSyncing.value) return;
-    _isSyncing.value = true;
+  /// [NEW] 3. دالة مساعدة لتحديث الوحدة المختارة
+  void _updateSelectedUnit(List<UnitModel> refreshedUnits) {
+    // ... (كما هو) ...
+    final currentSelectionId = selectedUnit.value?.id;
+    if (currentSelectionId != null &&
+        refreshedUnits.any((u) => u.id == currentSelectionId)) {
+      selectedUnit.value =
+          refreshedUnits.firstWhere((u) => u.id == currentSelectionId);
+    } else if (refreshedUnits.isNotEmpty) {
+      selectedUnit.value = refreshedUnits.first;
+    } else {
+      selectedUnit.value = null;
+    }
+  }
+
+  // [MODIFIED] 4. إصلاح خطأ "Unmounted State" (إرجاع bool)
+  Future<bool> addUnit({VoidCallback? onUnitAddedCallback}) async {
+    // ... (كما هو) ...
+    if (isSyncing.value) return false;
+    isSyncing.value = true;
+    bool success = false;
     try {
       final name = nameController.text.trim();
-      final order = orderController.text.isNotEmpty ? int.tryParse(orderController.text.trim()) : null;
+      final order = orderController.text.isNotEmpty
+          ? int.tryParse(orderController.text.trim())
+          : null;
       final description = descriptionController.text.trim();
 
       final newUnit = await localRepo.createLocalUnit(
@@ -151,28 +171,37 @@ class UnitController extends GetxController {
       }
 
       KLoaders.success(title: "نجاح", message: "تمت إضافة الوحدة بنجاح.");
+      onUnitAddedCallback?.call();
+      success = true; // تم النجاح
     } catch (e) {
       error.value = e.toString();
+      print("مدري مدري مدري مدري مدري مدر${e.toString()}");
       KLoaders.error(title: "خطأ في إضافة الوحدة", message: e.toString());
+      success = false; // فشل
     } finally {
-      _isSyncing.value = false;
+      isSyncing.value = false;
     }
+    return success; // إرجاع النتيجة
   }
 
-  Future<void> updateUnit(String id) async {
-    if (_isSyncing.value) return;
-    _isSyncing.value = true;
-  
+  // [MODIFIED] 5. إصلاح خطأ "Unmounted State" (إرجاع bool)
+  Future<bool> updateUnit(String id) async {
+    // ... (كما هو) ...
+    if (isSyncing.value) return false;
+    isSyncing.value = true;
+    bool success = false;
     try {
       final existingIndex = units.indexWhere((s) => s.id == id);
       if (existingIndex == -1) {
         throw Exception("الوحدة غير موجودة محلياً للتحرير.");
       }
-      
+
       final updatedUnitModel = UnitModel(
         id: id,
         name: nameController.text.trim(),
-        order: orderController.text.isNotEmpty ? int.tryParse(orderController.text.trim()) : null,
+        order: orderController.text.isNotEmpty
+            ? int.tryParse(orderController.text.trim())
+            : null,
         subjectId: subjectId,
         description: descriptionController.text.trim(),
         createdAt: units[existingIndex].createdAt,
@@ -195,18 +224,23 @@ class UnitController extends GetxController {
       }
 
       KLoaders.success(title: "نجاح", message: "تم تحديث الوحدة بنجاح.");
+      success = true;
     } catch (e) {
       error.value = e.toString();
       KLoaders.error(title: "خطأ في تحديث الوحدة", message: e.toString());
+      success = false;
     } finally {
-      _isSyncing.value = false;
+      isSyncing.value = false;
     }
+    return success;
   }
 
-  Future<void> deleteUnit(String id) async {
-    if (_isSyncing.value) return;
-    _isSyncing.value = true;
-  
+  // [MODIFIED] 6. إصلاح خطأ "Unmounted State" (إرجاع bool)
+  Future<bool> deleteUnit(String id) async {
+    // ... (كما هو) ...
+    if (isSyncing.value) return false;
+    isSyncing.value = true;
+    bool success = false;
     try {
       await localRepo.markAsDeleted(id);
       units.removeWhere((s) => s.id == id);
@@ -219,12 +253,15 @@ class UnitController extends GetxController {
       }
 
       KLoaders.success(title: "نجاح", message: "تم حذف الوحدة بنجاح.");
+      success = true;
     } catch (e) {
       error.value = e.toString();
       KLoaders.error(title: "خطأ في حذف الوحدة", message: e.toString());
+      success = false;
     } finally {
-      _isSyncing.value = false;
+      isSyncing.value = false;
     }
+    return success;
   }
 
   void selectUnit(UnitModel unit) {

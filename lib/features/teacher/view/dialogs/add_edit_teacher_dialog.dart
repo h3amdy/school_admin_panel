@@ -1,6 +1,6 @@
 import 'package:ashil_school/Utils/constants/colors.dart';
 import 'package:ashil_school/Utils/constants/sizes.dart';
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/Utils/validators/validation.dart';
 import 'package:ashil_school/common/widgets/coustom_text_field.dart';
 import 'package:ashil_school/features/teacher/controllers/teacher_controller.dart';

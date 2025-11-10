@@ -159,7 +159,7 @@ class CurriculumController extends GetxController {
 
         // [MODIFIED] 5. استدعاء دالة الاختيار التلقائي
         _loadAndSetDefaultSemester(newSemesters);
-      }),
+      }).call,
     );
 
     // ... (باقي المستمعين كما هم) ...
@@ -168,21 +168,21 @@ class CurriculumController extends GetxController {
       ever(subjectController.subjects, (List<SubjectModel> newSubjects) {
         subjects.assignAll(newSubjects);
         isLoadingSubjects.value = false;
-      }),
+      }).call,
     );
 
     // الاستماع لحالة تحميل الفصول
     _listenerDisposers.add(
       ever(semesterController.isLoading, (bool loading) {
         isLoadingSemesters.value = loading;
-      }),
+      }).call,
     );
 
     // الاستماع لحالة تحميل المواد
     _listenerDisposers.add(
       ever(subjectController.isLoading, (bool loading) {
         isLoadingSubjects.value = loading;
-      }),
+      }).call,
     );
   }
 

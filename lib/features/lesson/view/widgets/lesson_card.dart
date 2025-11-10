@@ -1,5 +1,5 @@
 import 'package:ashil_school/Utils/custom_dilog/confert_dilog.dart';
-import 'package:ashil_school/features/lesson/controller/lesson_stats_controller.dart';
+import 'package:ashil_school/features/lesson/controllers/lesson_stats_controller.dart';
 import 'package:ashil_school/features/lesson/models/lesson.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -26,61 +26,98 @@ class LessonCard extends StatelessWidget {
       LessonStatsController(lessonId: lesson.id),
       tag: lesson.id,
     );
-
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       onLongPress: () => showEditDeleteOptions(
         onEdit: onEdit,
         onDelete: onDelete,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/lesson_bg.png', // صورة افتراضية للدروس
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(color: Colors.blue.shade100);
-                },
-              ),
-            ),
-            // ... (يمكن إضافة تراكب لوني هنا) ...
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
                 children: [
-                  // اسم الدرس
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      lesson.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                  /// خلفية البطاقة
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/lesson_bg.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(color: Colors.blue.shade100);
+                      },
                     ),
                   ),
-                  const Spacer(),
-                  // تفاصيل المحتوى (عدد الأسئلة)
-                  Obx(() {
-                    return _buildContentDetails(context, statsController);
-                  }),
+
+                  /// محتوى البطاقة
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // اسم الدرس
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            lesson.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        // تفاصيل المحتوى (عدد الأسئلة)
+                        Obx(() {
+                          return _buildContentDetails(context, statsController);
+                        }),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          /// رقم الدرس في الأعلى (شارة دائرية)
+          Positioned(
+            top: 0,
+            right: 2,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                '${lesson.order ?? 1}', // <-- هنا الرقم، عدّل الحقل حسب الموديل
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

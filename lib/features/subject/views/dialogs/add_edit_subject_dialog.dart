@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ashil_school/Utils/constants/sizes.dart';
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/features/subject/controllers/subject_controller.dart';
 import 'package:ashil_school/features/subject/models/subject.dart';
 import 'package:ashil_school/features/semester/models/semester.dart';

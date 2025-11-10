@@ -2836,7 +2836,9 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
   @override
   late final GeneratedColumn<String> content = GeneratedColumn<String>(
       'content', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      clientDefault: () => '[]');
   static const VerificationMeta _unitIdMeta = const VerificationMeta('unitId');
   @override
   late final GeneratedColumn<String> unitId = GeneratedColumn<String>(
@@ -2859,6 +2861,18 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _profileImageUrlMeta =
+      const VerificationMeta('profileImageUrl');
+  @override
+  late final GeneratedColumn<String> profileImageUrl = GeneratedColumn<String>(
+      'profile_image_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _audioUrlMeta =
+      const VerificationMeta('audioUrl');
+  @override
+  late final GeneratedColumn<String> audioUrl = GeneratedColumn<String>(
+      'audio_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isSyncedMeta =
       const VerificationMeta('isSynced');
   @override
@@ -2888,6 +2902,8 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
         order,
         createdAt,
         updatedAt,
+        profileImageUrl,
+        audioUrl,
         isSynced,
         deleted
       ];
@@ -2915,8 +2931,6 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
     if (data.containsKey('content')) {
       context.handle(_contentMeta,
           content.isAcceptableOrUnknown(data['content']!, _contentMeta));
-    } else if (isInserting) {
-      context.missing(_contentMeta);
     }
     if (data.containsKey('unit_id')) {
       context.handle(_unitIdMeta,
@@ -2935,6 +2949,16 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
     if (data.containsKey('updated_at')) {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('profile_image_url')) {
+      context.handle(
+          _profileImageUrlMeta,
+          profileImageUrl.isAcceptableOrUnknown(
+              data['profile_image_url']!, _profileImageUrlMeta));
+    }
+    if (data.containsKey('audio_url')) {
+      context.handle(_audioUrlMeta,
+          audioUrl.isAcceptableOrUnknown(data['audio_url']!, _audioUrlMeta));
     }
     if (data.containsKey('is_synced')) {
       context.handle(_isSyncedMeta,
@@ -2967,6 +2991,10 @@ class $LessonsTable extends Lessons with TableInfo<$LessonsTable, LessonTable> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      profileImageUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}profile_image_url']),
+      audioUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}audio_url']),
       isSynced: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
       deleted: attachedDatabase.typeMapping
@@ -2988,6 +3016,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
   final int? order;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? profileImageUrl;
+  final String? audioUrl;
   final bool isSynced;
   final bool deleted;
   const LessonTable(
@@ -2998,6 +3028,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
       this.order,
       this.createdAt,
       this.updatedAt,
+      this.profileImageUrl,
+      this.audioUrl,
       required this.isSynced,
       required this.deleted});
   @override
@@ -3015,6 +3047,12 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
     }
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || profileImageUrl != null) {
+      map['profile_image_url'] = Variable<String>(profileImageUrl);
+    }
+    if (!nullToAbsent || audioUrl != null) {
+      map['audio_url'] = Variable<String>(audioUrl);
     }
     map['is_synced'] = Variable<bool>(isSynced);
     map['deleted'] = Variable<bool>(deleted);
@@ -3035,6 +3073,12 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      profileImageUrl: profileImageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(profileImageUrl),
+      audioUrl: audioUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioUrl),
       isSynced: Value(isSynced),
       deleted: Value(deleted),
     );
@@ -3051,6 +3095,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
       order: serializer.fromJson<int?>(json['order']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      profileImageUrl: serializer.fromJson<String?>(json['profileImageUrl']),
+      audioUrl: serializer.fromJson<String?>(json['audioUrl']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
       deleted: serializer.fromJson<bool>(json['deleted']),
     );
@@ -3066,6 +3112,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
       'order': serializer.toJson<int?>(order),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'profileImageUrl': serializer.toJson<String?>(profileImageUrl),
+      'audioUrl': serializer.toJson<String?>(audioUrl),
       'isSynced': serializer.toJson<bool>(isSynced),
       'deleted': serializer.toJson<bool>(deleted),
     };
@@ -3079,6 +3127,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
           Value<int?> order = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
           Value<DateTime?> updatedAt = const Value.absent(),
+          Value<String?> profileImageUrl = const Value.absent(),
+          Value<String?> audioUrl = const Value.absent(),
           bool? isSynced,
           bool? deleted}) =>
       LessonTable(
@@ -3089,6 +3139,10 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
         order: order.present ? order.value : this.order,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        profileImageUrl: profileImageUrl.present
+            ? profileImageUrl.value
+            : this.profileImageUrl,
+        audioUrl: audioUrl.present ? audioUrl.value : this.audioUrl,
         isSynced: isSynced ?? this.isSynced,
         deleted: deleted ?? this.deleted,
       );
@@ -3101,6 +3155,10 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
       order: data.order.present ? data.order.value : this.order,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      profileImageUrl: data.profileImageUrl.present
+          ? data.profileImageUrl.value
+          : this.profileImageUrl,
+      audioUrl: data.audioUrl.present ? data.audioUrl.value : this.audioUrl,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
@@ -3116,6 +3174,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
           ..write('order: $order, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('profileImageUrl: $profileImageUrl, ')
+          ..write('audioUrl: $audioUrl, ')
           ..write('isSynced: $isSynced, ')
           ..write('deleted: $deleted')
           ..write(')'))
@@ -3124,7 +3184,7 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
 
   @override
   int get hashCode => Object.hash(id, title, content, unitId, order, createdAt,
-      updatedAt, isSynced, deleted);
+      updatedAt, profileImageUrl, audioUrl, isSynced, deleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3136,6 +3196,8 @@ class LessonTable extends DataClass implements Insertable<LessonTable> {
           other.order == this.order &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
+          other.profileImageUrl == this.profileImageUrl &&
+          other.audioUrl == this.audioUrl &&
           other.isSynced == this.isSynced &&
           other.deleted == this.deleted);
 }
@@ -3148,6 +3210,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
   final Value<int?> order;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<String?> profileImageUrl;
+  final Value<String?> audioUrl;
   final Value<bool> isSynced;
   final Value<bool> deleted;
   final Value<int> rowid;
@@ -3159,6 +3223,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
     this.order = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.profileImageUrl = const Value.absent(),
+    this.audioUrl = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -3166,17 +3232,18 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
   LessonsCompanion.insert({
     required String id,
     required String title,
-    required String content,
+    this.content = const Value.absent(),
     required String unitId,
     this.order = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.profileImageUrl = const Value.absent(),
+    this.audioUrl = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         title = Value(title),
-        content = Value(content),
         unitId = Value(unitId);
   static Insertable<LessonTable> custom({
     Expression<String>? id,
@@ -3186,6 +3253,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
     Expression<int>? order,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<String>? profileImageUrl,
+    Expression<String>? audioUrl,
     Expression<bool>? isSynced,
     Expression<bool>? deleted,
     Expression<int>? rowid,
@@ -3198,6 +3267,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
       if (order != null) 'order': order,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
+      if (audioUrl != null) 'audio_url': audioUrl,
       if (isSynced != null) 'is_synced': isSynced,
       if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
@@ -3212,6 +3283,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
       Value<int?>? order,
       Value<DateTime?>? createdAt,
       Value<DateTime?>? updatedAt,
+      Value<String?>? profileImageUrl,
+      Value<String?>? audioUrl,
       Value<bool>? isSynced,
       Value<bool>? deleted,
       Value<int>? rowid}) {
@@ -3223,6 +3296,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
       order: order ?? this.order,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      audioUrl: audioUrl ?? this.audioUrl,
       isSynced: isSynced ?? this.isSynced,
       deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
@@ -3253,6 +3328,12 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (profileImageUrl.present) {
+      map['profile_image_url'] = Variable<String>(profileImageUrl.value);
+    }
+    if (audioUrl.present) {
+      map['audio_url'] = Variable<String>(audioUrl.value);
+    }
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
@@ -3275,6 +3356,8 @@ class LessonsCompanion extends UpdateCompanion<LessonTable> {
           ..write('order: $order, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('profileImageUrl: $profileImageUrl, ')
+          ..write('audioUrl: $audioUrl, ')
           ..write('isSynced: $isSynced, ')
           ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
@@ -5882,11 +5965,13 @@ typedef $$UnitsTableProcessedTableManager = ProcessedTableManager<
 typedef $$LessonsTableCreateCompanionBuilder = LessonsCompanion Function({
   required String id,
   required String title,
-  required String content,
+  Value<String> content,
   required String unitId,
   Value<int?> order,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
+  Value<String?> profileImageUrl,
+  Value<String?> audioUrl,
   Value<bool> isSynced,
   Value<bool> deleted,
   Value<int> rowid,
@@ -5899,6 +5984,8 @@ typedef $$LessonsTableUpdateCompanionBuilder = LessonsCompanion Function({
   Value<int?> order,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
+  Value<String?> profileImageUrl,
+  Value<String?> audioUrl,
   Value<bool> isSynced,
   Value<bool> deleted,
   Value<int> rowid,
@@ -5933,6 +6020,13 @@ class $$LessonsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get profileImageUrl => $composableBuilder(
+      column: $table.profileImageUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get audioUrl => $composableBuilder(
+      column: $table.audioUrl, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
       column: $table.isSynced, builder: (column) => ColumnFilters(column));
@@ -5971,6 +6065,13 @@ class $$LessonsTableOrderingComposer
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get profileImageUrl => $composableBuilder(
+      column: $table.profileImageUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get audioUrl => $composableBuilder(
+      column: $table.audioUrl, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isSynced => $composableBuilder(
       column: $table.isSynced, builder: (column) => ColumnOrderings(column));
 
@@ -6007,6 +6108,12 @@ class $$LessonsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get profileImageUrl => $composableBuilder(
+      column: $table.profileImageUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get audioUrl =>
+      $composableBuilder(column: $table.audioUrl, builder: (column) => column);
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
@@ -6045,6 +6152,8 @@ class $$LessonsTableTableManager extends RootTableManager<
             Value<int?> order = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> profileImageUrl = const Value.absent(),
+            Value<String?> audioUrl = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
             Value<bool> deleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -6057,6 +6166,8 @@ class $$LessonsTableTableManager extends RootTableManager<
             order: order,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            profileImageUrl: profileImageUrl,
+            audioUrl: audioUrl,
             isSynced: isSynced,
             deleted: deleted,
             rowid: rowid,
@@ -6064,11 +6175,13 @@ class $$LessonsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             required String id,
             required String title,
-            required String content,
+            Value<String> content = const Value.absent(),
             required String unitId,
             Value<int?> order = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> profileImageUrl = const Value.absent(),
+            Value<String?> audioUrl = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
             Value<bool> deleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -6081,6 +6194,8 @@ class $$LessonsTableTableManager extends RootTableManager<
             order: order,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            profileImageUrl: profileImageUrl,
+            audioUrl: audioUrl,
             isSynced: isSynced,
             deleted: deleted,
             rowid: rowid,

@@ -1,6 +1,6 @@
 import 'package:ashil_school/Utils/constants/colors.dart';
 import 'package:ashil_school/Utils/constants/image_strings.dart';
-import 'package:ashil_school/Utils/helper_functions.dart';
+import 'package:ashil_school/Utils/helpers/helper_functions.dart';
 import 'package:ashil_school/Utils/helpers/loaders/animation_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

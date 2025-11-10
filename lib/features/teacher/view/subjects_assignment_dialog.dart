@@ -1,7 +1,7 @@
 // lib/features/teacher/view/subjects_assignment_dialog.dart
 import 'package:ashil_school/Utils/constants/colors.dart';
 import 'package:ashil_school/Utils/constants/sizes.dart';
-import 'package:ashil_school/Utils/custom_dilog/cusom_dilog.dart';
+import 'package:ashil_school/Utils/custom_dilog/custom_dialog.dart';
 import 'package:ashil_school/Utils/theme/decorations/app_decorations.dart';
 import 'package:ashil_school/features/grade/models/grade.dart';
 import 'package:ashil_school/features/semester/models/semester.dart';
